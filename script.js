@@ -4,63 +4,63 @@
 const SUPABASE_URL = 'https://eaklrdnwodbyzagfitqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVha2xyZG53b2RieXphZ2ZpdHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NTc3NDUsImV4cCI6MjA5MTUzMzc0NX0.Utl5GGT4A9DdTc30WzaJZnrggBCuHTthmCdeXpOcD6Q';
 
-let supabase = null;
+let _supaClient = null;
 let CLIENT_ID = 'demo-client';
 let globalCloudData = null;
 
-try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const urlParams = new URLSearchParams(window.location.search);
-    CLIENT_ID = urlParams.get('id') || 'demo-client';
-} catch (e) {
-    console.warn("[MODE LOKAL] Supabase tidak tersedia.", e);
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
-    
-    // Tampilkan Loader Sementara
-    if(supabase) {
-        const bd = document.body;
-        const loader = document.createElement('div');
-        loader.id = 'supaLoader';
-        loader.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:#ffffff;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-size:1.5rem;color:var(--color-gold);";
-        loader.innerHTML = "Mempersiapkan Undangan... <br><div style='width:20px;height:20px;border:3px solid var(--color-gold);border-top:3px solid transparent;border-radius:50%;animation:spin 1s linear infinite;margin: 15px auto;'></div><style>@keyframes spin{100%{transform:rotate(360deg);}}</style>";
-        bd.appendChild(loader);
 
-        try {
-            const { data } = await supabase.from('wedding_invitations').select('*').eq('client_id', CLIENT_ID).single();
-            if (data) globalCloudData = data;
-        } catch(err) {
-            console.error("Gagal memuat awan:", err);
+    // --- FASE 1: Coba hubungkan ke Supabase (jika SDK tersedia) ---
+    try {
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            _supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            const urlParams = new URLSearchParams(window.location.search);
+            CLIENT_ID = urlParams.get('id') || 'demo-client';
+            console.log(`[SUPABASE] Terhubung. Memuat data klien: ${CLIENT_ID}`);
+
+            const { data, error } = await _supaClient
+                .from('wedding_invitations')
+                .select('*')
+                .eq('client_id', CLIENT_ID)
+                .maybeSingle();
+
+            if (!error && data) {
+                globalCloudData = data;
+                console.log('[SUPABASE] Data klien berhasil dimuat.');
+
+                // Pasang jembatan baca: localStorage.getItem -> Cloud Data
+                const _origGet = localStorage.getItem.bind(localStorage);
+                localStorage.getItem = function(k) {
+                    if (k === 'wedding_settings' && globalCloudData.settings) return JSON.stringify(globalCloudData.settings);
+                    if (k === 'wedding_guests' && globalCloudData.guests) return JSON.stringify(globalCloudData.guests);
+                    if (k === 'wedding_wishes' && globalCloudData.wishes) return JSON.stringify(globalCloudData.wishes);
+                    if (k === 'wedding_gallery' && globalCloudData.gallery) return JSON.stringify(globalCloudData.gallery);
+                    if (k === 'wedding_story' && globalCloudData.story) return JSON.stringify(globalCloudData.story);
+                    return _origGet(k);
+                };
+
+                // Pasang jembatan tulis: localStorage.setItem -> Push ke Cloud
+                const _origSet = localStorage.setItem.bind(localStorage);
+                localStorage.setItem = function(k, v) {
+                    _origSet(k, v);
+                    if (k === 'wedding_wishes' && _supaClient) {
+                        try {
+                            const parsed = JSON.parse(v);
+                            _supaClient.from('wedding_invitations').update({ wishes: parsed }).eq('client_id', CLIENT_ID).then();
+                        } catch(e) { /* silent */ }
+                    }
+                };
+            } else {
+                console.warn('[SUPABASE] Data klien tidak ditemukan. Mode default aktif.');
+            }
+        } else {
+            console.warn('[MODE LOKAL] Supabase SDK tidak tersedia. Menggunakan data lokal.');
         }
-
-        // Pemasangan Jembatan (Polyfill LocalStorage)
-        const _origGet = localStorage.getItem.bind(localStorage);
-        localStorage.getItem = function(k) {
-            if (globalCloudData) {
-                if (k === 'wedding_settings' && globalCloudData.settings) return JSON.stringify(globalCloudData.settings);
-                if (k === 'wedding_guests' && globalCloudData.guests) return JSON.stringify(globalCloudData.guests);
-                if (k === 'wedding_wishes' && globalCloudData.wishes) return JSON.stringify(globalCloudData.wishes);
-                if (k === 'wedding_gallery' && globalCloudData.gallery) return JSON.stringify(globalCloudData.gallery);
-                if (k === 'wedding_story' && globalCloudData.story) return JSON.stringify(globalCloudData.story);
-            }
-            return _origGet(k); // Mode Demo Default
-        };
-
-        const _origSet = localStorage.setItem.bind(localStorage);
-        localStorage.setItem = function(k, v) {
-            _origSet(k, v);
-            if (k === 'wedding_wishes' && globalCloudData) {
-                // Dorong ke Supabase Latar Belakang (Dukungan RSVP Tamu)
-                const parsed = JSON.parse(v);
-                supabase.from('wedding_invitations').update({ wishes: parsed }).eq('client_id', CLIENT_ID).then();
-            }
-        };
-
-        // Buang Loader
-        setTimeout(() => { if(loader) loader.style.opacity = '0'; setTimeout(()=>loader.remove(),500); }, 500);
+    } catch (e) {
+        console.warn('[SUPABASE] Gagal inisialisasi, lanjut mode lokal:', e.message);
     }
 
+    // --- FASE 2: SELALU jalankan semua fungsi UI (tidak peduli Supabase berhasil atau gagal) ---
     applyDynamicSettings();
     loadDynamicGallery();
     initLoveStory();
