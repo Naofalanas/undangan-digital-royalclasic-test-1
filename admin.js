@@ -47,6 +47,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('⚠️ Gagal koneksi ke Cloud. Data lokal digunakan.');
     }
 
+    // --- Update link Preview agar membawa ?id= yang benar ---
+    const previewUrl = `index.html?id=${CLIENT_ID}`;
+    const sidebarLink = document.getElementById('sidebarPreviewLink');
+    const headerLink = document.getElementById('headerPreviewLink');
+    if (sidebarLink) sidebarLink.href = previewUrl;
+    if (headerLink) headerLink.href = previewUrl;
+
     loadDashboard();
     initWeddingInfoForm();
     initGuestManagement();
@@ -178,13 +185,13 @@ function initNavigation() {
     const pageSubtitle = document.getElementById('pageSubtitle');
 
     const titles = {
-        'dashboard':    { title: 'Dashboard', sub: 'Ringkasan data undangan Anda' },
+        'dashboard': { title: 'Dashboard', sub: 'Ringkasan data undangan Anda' },
         'wedding-info': { title: 'Info Pernikahan', sub: 'Edit detail informasi pernikahan' },
-        'guests':       { title: 'Daftar Tamu', sub: 'Kelola tamu undangan & generate link' },
-        'rsvp':         { title: 'RSVP', sub: 'Data konfirmasi kehadiran tamu' },
-        'wishes':       { title: 'Ucapan & Doa', sub: 'Moderasi ucapan dari tamu' },
-        'gallery':      { title: 'Galeri', sub: 'Kelola foto galeri undangan' },
-        'story':        { title: 'Cerita Cinta', sub: 'Kelola momen perjalanan cinta Anda' },
+        'guests': { title: 'Daftar Tamu', sub: 'Kelola tamu undangan & generate link' },
+        'rsvp': { title: 'RSVP', sub: 'Data konfirmasi kehadiran tamu' },
+        'wishes': { title: 'Ucapan & Doa', sub: 'Moderasi ucapan dari tamu' },
+        'gallery': { title: 'Galeri', sub: 'Kelola foto galeri undangan' },
+        'story': { title: 'Cerita Cinta', sub: 'Kelola momen perjalanan cinta Anda' },
     };
 
     navItems.forEach(item => {
@@ -485,7 +492,7 @@ function loadGuestTable() {
 }
 
 // Copy link helper (global)
-window.copyLink = function(link) {
+window.copyLink = function (link) {
     navigator.clipboard.writeText(link).then(() => {
         showToast('📋 Link berhasil disalin!');
     }).catch(() => {
@@ -634,7 +641,7 @@ function loadStoryAdmin() {
     `).join('');
 }
 
-window.deleteStory = function(id) {
+window.deleteStory = function (id) {
     if (!confirm('Hapus momen ini?')) return;
     let story = getData(KEYS.STORY) || getDefaultStory();
     story = story.filter(s => s.id !== id);
@@ -698,7 +705,7 @@ function loadWishesAdmin() {
     }).join('');
 }
 
-window.deleteWish = function(id) {
+window.deleteWish = function (id) {
     if (!confirm('Hapus ucapan ini?')) return;
     let wishes = getData(KEYS.WISHES) || [];
     wishes = wishes.filter(w => w.id !== id);
@@ -799,7 +806,7 @@ function createAddButton() {
     return div;
 }
 
-window.deletePhoto = function(id) {
+window.deletePhoto = function (id) {
     if (!confirm('Hapus foto ini dari galeri?')) return;
     let gallery = getData(KEYS.GALLERY) || getDefaultGallery();
     gallery = gallery.filter(p => p.id !== id);
