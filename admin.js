@@ -3,9 +3,33 @@
    JavaScript Logic
    ========================================= */
 
-document.addEventListener('DOMContentLoaded', () => {
+/* =========================================
+   SUPABASE INTEGRATION (CLOUD MULTI-TENANCY)
+   ========================================= */
+const SUPABASE_URL = 'https://eaklrdnwodbyzagfitqb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVha2xyZG53b2RieXphZ2ZpdHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NTc3NDUsImV4cCI6MjA5MTUzMzc0NX0.Utl5GGT4A9DdTc30WzaJZnrggBCuHTthmCdeXpOcD6Q';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Extact URL Parameter as Multi-Tenant ID
+const urlParams = new URLSearchParams(window.location.search);
+const CLIENT_ID = urlParams.get('id') || 'demo-client';
+
+// Local Memory State
+let localStore = {
+    settings: null,
+    guests: null,
+    wishes: null,
+    gallery: null,
+    story: null
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initSidebar();
+    
+    showToast('Memuat data dari Cloud Supabase...');
+    await fetchCloudData(); // Memuat data klien spesifik dari db
+
     loadDashboard();
     initWeddingInfoForm();
     initGuestManagement();
@@ -14,8 +38,35 @@ document.addEventListener('DOMContentLoaded', () => {
     initStoryManagement();
 });
 
+async function fetchCloudData() {
+    try {
+        const { data, error } = await supabase
+            .from('wedding_invitations')
+            .select('*')
+            .eq('client_id', CLIENT_ID)
+            .single();
+
+        if (error && error.code === 'PGRST116') {
+            // Jika ID Klien baru belum ada di database, buat baris kosong!
+            console.warn(`ID Klien [${CLIENT_ID}] belum ada. Membuat wadah baru di Supabase...`);
+            await supabase.from('wedding_invitations').insert({ client_id: CLIENT_ID });
+            return; 
+        }
+
+        if (data) {
+            localStore.settings = data.settings;
+            localStore.guests = data.guests;
+            localStore.wishes = data.wishes;
+            localStore.gallery = data.gallery;
+            localStore.story = data.story;
+        }
+    } catch (err) {
+        console.error("Gagal terhubung ke Supabase:", err);
+    }
+}
+
 /* =========================================
-   STORAGE KEYS
+   STORAGE KEYS & WRAPPERS
    ========================================= */
 const KEYS = {
     SETTINGS: 'wedding_settings',
@@ -25,16 +76,33 @@ const KEYS = {
     STORY: 'wedding_story',
 };
 
-/* =========================================
-   HELPER: LocalStorage Read/Write
-   ========================================= */
+const DB_MAP = {
+    'wedding_settings': 'settings',
+    'wedding_guests': 'guests',
+    'wedding_wishes': 'wishes',
+    'wedding_gallery': 'gallery',
+    'wedding_story': 'story'
+};
+
 function getData(key) {
-    try { return JSON.parse(localStorage.getItem(key)) || null; }
-    catch { return null; }
+    const colName = DB_MAP[key];
+    return localStore[colName] || null;
 }
 
 function setData(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
+    const colName = DB_MAP[key];
+    localStore[colName] = data; // Update UI State instantly (Optimistic UI)
+
+    // Push ke Supabase di belakang layar tanpa menahan layar
+    supabase.from('wedding_invitations')
+        .update({ [colName]: data })
+        .eq('client_id', CLIENT_ID)
+        .then(({ error }) => {
+            if (error) {
+                console.error(`Gagal menyimpan ${colName} ke Cloud:`, error);
+                showToast('⚠️ Gagal menyimpan ke Cloud (Periksa Koneksi)');
+            }
+        });
 }
 
 /* =========================================
