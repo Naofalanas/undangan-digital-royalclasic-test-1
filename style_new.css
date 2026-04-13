@@ -1,0 +1,600 @@
+/* =========================================
+   UNDANGAN DIGITAL - PREMIUM STYLE
+   Color Palette: Sage Green + Gold + Cream
+   ========================================= */
+
+/* --- Custom Properties --- */
+:root {
+    /* Ghibli Cinematic Palette */
+    --bg-primary: #F7FAF7;      /* Soft Mint */
+    --bg-secondary: #E6EEF5;    /* Sky Blue tint */
+    --bg-accent: #FFF9E6;       /* Warm Sunlight */
+    --bg-dark: #2D3A2D;         /* Deep Forest */
+    
+    --color-primary: #8AB58A;   /* Grassy Green */
+    --color-primary-dark: #3D4A3D;
+    --color-primary-light: #C1DBC1;
+    
+    --color-accent: #F6B352;    /* Harvest Orange */
+    --color-accent-light: #FFD28F;
+    --color-white: #FFFFFF;
+    --color-border: #D1E0D1;
+
+    --font-script: 'Pacifico', cursive;
+    --font-heading: 'Nunito', sans-serif;
+    --font-body: 'Nunito', sans-serif;
+
+    --shadow-sm: 0 4px 15px rgba(62, 74, 62, 0.05);
+    --shadow-md: 0 8px 30px rgba(62, 74, 62, 0.08);
+    --shadow-lg: 0 12px 50px rgba(62, 74, 62, 0.12);
+    --shadow-xl: 0 20px 80px rgba(0,0,0,0.15);
+
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 32px;
+    --radius-xl: 60px;
+    --radius-full: 9999px;
+
+    --transition: 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-bouncy: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--bg-primary);
+    color: var(--color-text);
+    line-height: 1.8;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body.no-scroll {
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.container {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* =========================================
+   COVER / ENVELOPE OVERLAY
+   ========================================= */
+/* =========================================
+   CINEMATIC SPLIT COVER
+   ========================================= */
+.cover-split {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+
+.cover-panel {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: var(--color-primary);
+    background-image: linear-gradient(rgba(138, 181, 138, 0.8), rgba(138, 181, 138, 0.8)), url("assets/img/ghibli-bg.png");
+    background-size: cover;
+    background-position: center;
+    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+    z-index: 1;
+}
+
+.cover-panel.left { 
+    left: 0; 
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+.cover-panel.right { 
+    right: 0; 
+}
+
+.cover-split.opened .cover-panel.left { transform: translateX(-100%); }
+.cover-split.opened .cover-panel.right { transform: translateX(100%); }
+
+.cover-inner {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.cover-split.opened .cover-inner {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.cover-content {
+    max-width: 480px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 60px 30px;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+    border: 8px solid var(--color-white);
+    position: relative;
+    z-index: 20;
+}
+
+/* Ensure names are visible */
+.cover-names {
+    color: var(--color-primary-dark) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.cover-ornament {
+    color: var(--color-primary);
+    font-size: 1.5rem;
+    margin: 16px 0;
+    user-select: none;
+}
+
+.cover-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-text-light);
+    margin-bottom: 12px;
+}
+
+.cover-names {
+    font-family: var(--font-script);
+    font-size: clamp(3rem, 10vw, 4.5rem);
+    font-weight: 400;
+    color: var(--color-primary-dark);
+    line-height: 1.1;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.1));
+}
+
+.cover-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px auto;
+    max-width: 200px;
+}
+
+.cover-divider::before,
+.cover-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+}
+
+.cover-divider-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--color-accent);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cover-to {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-text-light);
+    margin-bottom: 4px;
+    margin-top: 24px;
+}
+
+.cover-guest {
+    font-family: var(--font-serif);
+    font-size: clamp(1.4rem, 5vw, 1.8rem);
+    font-weight: 600;
+    color: var(--color-accent-light);
+    margin-bottom: 32px;
+    line-height: 1.3;
+}
+
+.btn-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 36px;
+    background: transparent;
+    border: 1.5px solid var(--color-accent);
+    color: var(--color-accent);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-open::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+    z-index: -1;
+    border-radius: inherit;
+}
+
+.btn-open:hover::before {
+    transform: scaleX(1);
+}
+
+.btn-open:hover {
+    color: var(--bg-dark);
+}
+
+.btn-open:active {
+    transform: scale(0.96);
+}
+
+.btn-open-icon {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-open:hover .btn-open-icon {
+    transform: translateY(-2px);
+}
+
+/* Floating Petals on Cover */
+.petal {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--color-accent);
+    border-radius: 50% 0 50% 0;
+    opacity: 0;
+    pointer-events: none;
+    animation: petalFall linear infinite;
+}
+
+@keyframes petalFall {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px) rotate(0deg);
+    }
+
+    10% {
+        opacity: 0.4;
+    }
+
+    90% {
+        opacity: 0.2;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(360deg);
+    }
+}
+
+/* =========================================
+   MUSIC TOGGLE BUTTON
+   ========================================= */
+.music-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 900;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-primary);
+    color: var(--color-white);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+}
+
+.music-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
+.music-btn:hover {
+    background: var(--color-primary-dark);
+    transform: scale(1.1);
+}
+
+.music-btn.playing .music-icon {
+    animation: musicPulse 1s ease-in-out infinite;
+}
+
+@keyframes musicPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+/* =========================================
+   MAIN CONTENT
+   ========================================= */
+#mainContent {
+    opacity: 0;
+    transition: opacity 0.8s ease 0.3s;
+}
+
+#mainContent.visible {
+    opacity: 1;
+}
+
+/* =========================================
+   SECTION COMMON STYLES
+   ========================================= */
+.section {
+    padding: 80px 0;
+    position: relative;
+}
+
+.section-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.8rem, 5vw, 2.4rem);
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+}
+
+.section-subtitle {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 400;
+    text-align: center;
+    color: var(--color-text-light);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+}
+
+.section-ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px auto 40px;
+    max-width: 160px;
+}
+
+.section-ornament::before,
+.section-ornament::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border), transparent);
+}
+
+.section-ornament-icon {
+    color: var(--color-accent);
+    font-size: 0.9rem;
+}
+
+/* =========================================
+   MAIN SPLIT LAYOUT
+   ========================================= */
+.main-split {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+    .main-split {
+        flex-direction: row;
+        height: 100vh;
+        overflow: hidden;
+    }
+}
+
+.visual-side {
+    position: relative;
+    height: 40vh;
+    width: 100%;
+    z-index: 100;
+}
+
+@media (min-width: 1024px) {
+    .visual-side {
+        height: 100vh;
+        width: 45%;
+        position: sticky;
+        top: 0;
+    }
+}
+
+.visual-bg {
+    height: 100%;
+    width: 100%;
+    background: url("assets/img/ghibli-bg.png") center/cover no-repeat;
+    position: relative;
+    overflow: hidden;
+}
+
+.watercolor-overlay {
+    position: absolute;
+    inset: 0;
+    background: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.visual-content {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    color: var(--color-white);
+    text-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+
+.visual-names {
+    font-family: var(--font-script);
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    margin-bottom: 5px;
+}
+
+.visual-date {
+    font-weight: 800;
+    letter-spacing: 5px;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.content-side {
+    width: 100%;
+    background: var(--bg-primary);
+    position: relative;
+}
+
+@media (min-width: 1024px) {
+    .content-side {
+        width: 55%;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .content-side::-webkit-scrollbar { display: none; }
+}
+
+/* =========================================
+   HERO MINIMAL
+   ========================================= */
+.hero-minimal {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 30px;
+    background: var(--color-white);
+    position: relative;
+}
+
+.hero-divider {
+    font-size: 2.5rem;
+    color: var(--color-primary-light);
+    margin: 20px 0;
+    opacity: 0.5;
+}
+
+.hero-name-big {
+    font-family: var(--font-script);
+    font-size: clamp(4rem, 10vw, 6rem);
+    color: var(--color-primary-dark);
+    line-height: 1.1;
+    margin: 20px 0;
+}
+
+.hero-name-big span {
+    font-size: 0.6em;
+    color: var(--color-accent);
+    display: block;
+    margin: 10px 0;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, 
+        rgba(230, 238, 245, 0.4) 0%, 
+        rgba(247, 250, 247, 0.2) 50%, 
+        rgba(247, 250, 247, 0.8) 100%);
+    z-index: 1;
+}
+
+/* Floating Clouds */
+.hero-section::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 150px;
+    background: url('assets/img/ghibli-cloud.png') center/contain no-repeat;
+    top: 10%;
+    left: -300px;
+    opacity: 0.8;
+    z-index: 2;
+    animation: floatCloud 40s linear infinite;
+}
+
+@keyframes floatCloud {
+    from { transform: translateX(-10vw); }
+    to { transform: translateX(110vw); }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 3;
+    padding: 40px 24px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
