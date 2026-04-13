@@ -8,11 +8,9 @@
    ========================================= */
 const SUPABASE_URL = 'https://eaklrdnwodbyzagfitqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVha2xyZG53b2RieXphZ2ZpdHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NTc3NDUsImV4cCI6MjA5MTUzMzc0NX0.Utl5GGT4A9DdTc30WzaJZnrggBCuHTthmCdeXpOcD6Q';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Extact URL Parameter as Multi-Tenant ID
-const urlParams = new URLSearchParams(window.location.search);
-const CLIENT_ID = urlParams.get('id') || 'demo-client';
+let _supaAdmin = null;
+let CLIENT_ID = 'demo-client';
 
 // Local Memory State
 let localStore = {
@@ -26,9 +24,28 @@ let localStore = {
 document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initSidebar();
-    
-    showToast('Memuat data dari Cloud Supabase...');
-    await fetchCloudData(); // Memuat data klien spesifik dari db
+
+    // --- Inisialisasi Supabase (di dalam DOM agar SDK pasti sudah dimuat) ---
+    try {
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            _supaAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            const urlParams = new URLSearchParams(window.location.search);
+            CLIENT_ID = urlParams.get('id') || 'demo-client';
+
+            // Tampilkan ID klien aktif di header dashboard
+            const headerTitle = document.querySelector('.admin-header h1');
+            if (headerTitle) headerTitle.textContent = `Dashboard Admin — ${CLIENT_ID}`;
+
+            showToast(`Memuat data klien: ${CLIENT_ID}...`);
+            await fetchCloudData();
+        } else {
+            console.warn('[ADMIN] Supabase SDK tidak tersedia. Mode offline.');
+            showToast('⚠️ Mode Offline (Supabase tidak tersedia)');
+        }
+    } catch (e) {
+        console.error('[ADMIN] Gagal inisialisasi Supabase:', e.message);
+        showToast('⚠️ Gagal koneksi ke Cloud. Data lokal digunakan.');
+    }
 
     loadDashboard();
     initWeddingInfoForm();
@@ -39,29 +56,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchCloudData() {
+    if (!_supaAdmin) return;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await _supaAdmin
             .from('wedding_invitations')
             .select('*')
             .eq('client_id', CLIENT_ID)
-            .single();
+            .maybeSingle();
 
-        if (error && error.code === 'PGRST116') {
-            // Jika ID Klien baru belum ada di database, buat baris kosong!
-            console.warn(`ID Klien [${CLIENT_ID}] belum ada. Membuat wadah baru di Supabase...`);
-            await supabase.from('wedding_invitations').insert({ client_id: CLIENT_ID });
-            return; 
+        if (!data) {
+            // Klien baru! Buat baris kosong di database
+            console.warn(`[ADMIN] Klien "${CLIENT_ID}" belum ada. Membuat baris baru...`);
+            const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({ client_id: CLIENT_ID });
+            if (insertErr) console.error('[ADMIN] Gagal insert baris baru:', insertErr);
+            else showToast(`✅ Klien "${CLIENT_ID}" berhasil didaftarkan!`);
+            return;
         }
 
-        if (data) {
+        if (!error && data) {
             localStore.settings = data.settings;
             localStore.guests = data.guests;
             localStore.wishes = data.wishes;
             localStore.gallery = data.gallery;
             localStore.story = data.story;
+            showToast('✅ Data berhasil dimuat dari Cloud!');
         }
     } catch (err) {
-        console.error("Gagal terhubung ke Supabase:", err);
+        console.error('[ADMIN] Gagal fetch data:', err);
     }
 }
 
@@ -91,18 +112,20 @@ function getData(key) {
 
 function setData(key, data) {
     const colName = DB_MAP[key];
-    localStore[colName] = data; // Update UI State instantly (Optimistic UI)
+    localStore[colName] = data; // Update UI langsung (Optimistic UI)
 
-    // Push ke Supabase di belakang layar tanpa menahan layar
-    supabase.from('wedding_invitations')
-        .update({ [colName]: data })
-        .eq('client_id', CLIENT_ID)
-        .then(({ error }) => {
-            if (error) {
-                console.error(`Gagal menyimpan ${colName} ke Cloud:`, error);
-                showToast('⚠️ Gagal menyimpan ke Cloud (Periksa Koneksi)');
-            }
-        });
+    // Push ke Supabase di belakang layar
+    if (_supaAdmin) {
+        _supaAdmin.from('wedding_invitations')
+            .update({ [colName]: data })
+            .eq('client_id', CLIENT_ID)
+            .then(({ error }) => {
+                if (error) {
+                    console.error(`Gagal menyimpan ${colName} ke Cloud:`, error);
+                    showToast('⚠️ Gagal menyimpan ke Cloud');
+                }
+            });
+    }
 }
 
 /* =========================================

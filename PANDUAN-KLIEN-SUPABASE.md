@@ -1,48 +1,147 @@
-# Panduan Rahasia Sistem Agensi: Supabase Multi-Tenancy
+# 📖 Panduan Lengkap: Mengelola Klien Undangan Digital
 
-Dokumentasi ini dibuat khusus untuk Anda selaku pemilik (Pemilik Agensi Undangan Digital) agar mudah memahami cara kerja sistem penyimpanan terpusat (Cloud).
-
-## Konsep Dasar (Kekuatan Penuh Multi-Tenancy)
-Sistem ini menggunakan teknik rahasia bernama **URL Parameter Binding**. Artinya, Anda hanya membutuhkan **SATU buah database (Supabase) dan SATU buah deployment website (misal di Vercel)** untuk melayani ratusan klien yang berbeda!
-
-Daripada menyalin (Copy-Paste) seluruh folder project setiap mendapat klien baru, Anda cukup membedakan mereka lewat "Kata Kunci Ujung Tautan" yang disebut dengan ID Klien (`?id=`).
-
-Contoh Pemanfaatan:
-- **Klien 1 (Arya & Kiara)**
-  ID yang disepakati: `aryakiara`
-  Link yang dikasih ke mereka: `https://web-anda.vercel.app/?id=aryakiara`
-- **Klien 2 (Budi & Siti)**
-  ID yang disepakati: `budi-siti`
-  Link yang dikasih ke mereka: `https://web-anda.vercel.app/?id=budi-siti`
-
-Saat website mendeteksi akhiran tersebut, sistem akan langsung menyelam ke Supabase, menarik baris data milik klien tersebut, lalu memunculkannya. Ajaib, elegan, dan sangat instan!
+> Dokumen ini adalah SOP (Standard Operating Procedure) resmi untuk menambahkan dan mengelola klien baru menggunakan **1 Project Supabase + 1 Website Vercel** yang sama.
 
 ---
 
-## SOP: Apa yang Harus Dilakukan Saat Dapat Klien Baru?
+## 🧠 Konsep Dasar
 
-Biasakan mengikuti 3 Langkah Baku ini setiap kali "Ada Klien Transfer Uang & Masuk Pesanan":
+Anda hanya punya **1 website** dan **1 database**. Yang membedakan tiap klien adalah **kode ID unik** di ujung URL.
 
-### Langkah 1: Buat KTP ID Unik Untuk Klien
-Tentukan satu kata sandi gabungan yang unik (tanpa spasi).
-**Contoh**: `nanda-reza`
+Contoh nyata:
+- Klien A (Ryan & Siti): `https://undangan-anda.vercel.app/?id=ryan-siti`
+- Klien B (Budi & Rina): `https://undangan-anda.vercel.app/?id=budi-rina`
+- Klien C (Andi & Mega): `https://undangan-anda.vercel.app/?id=andi-mega`
 
-### Langkah 2: Buka Kunci Panel Dasbor Anda
-Buka alat kemudi (Dashboard Admin) Anda dan langsung tambahkan ID yang telah Anda buat di belakang `URL` nya.
-**Ketik di Browser Anda**:
-`http://web-anda.vercel.app/admin.html?id=nanda-reza`
+Semua menggunakan website yang **sama persis**, tapi datanya **berbeda-beda** karena masing-masing punya baris sendiri di database Supabase.
 
-👉 Di momen saat Anda menekan **Enter** di atas URL tersebut, sistem secara rahasia langsung membuat "lahan kosong" di Supabase atas nama `nanda-reza` dan siap untuk Anda ukir.
+---
 
-### Langkah 3: Isi Formulir Dasbor Tanpa Masuk Kode 
-Seketika halaman Dashboard terbuka, masuklah ke tab **Info Pernikahan**, isikan semua teks/foto mereka lalu tekan tombol **💾 Simpan**.
-*BUM!* Semua data klien tersebut berhasil mendarat selamat ke Supabase.
+## 🆕 SOP: Ada Klien Baru Masuk (Step-by-Step)
 
-### Langkah 4: Penyerahan ke Klien Siap Launching!
-Setorkan link Undangan utamanya ke WhatsApp Sang Pengantin.
-**Berikan tautan ini**:
-`https://web-anda.vercel.app/?id=nanda-reza`
+### Langkah 1: Tentukan ID Klien
+Buat kode unik untuk klien baru. Aturannya:
+- Huruf kecil semua
+- Tanpa spasi (gunakan strip `-` sebagai pemisah)
+- Gabungan nama mempelai pria & wanita
 
-Selesai. Anda tak perlu berurusan lagi dengan `git commit` massal, terminal *Vscode*, Vercel config, ataupun *Hosting File*. Cukup mainkan `Url Parameter` seperti sutradara ulung.
+**Contoh:**
+- `ryan-siti`
+- `andi-mega`
+- `fajar-dewi`
 
-> **Catatan Darurat**: Jika ada staf Anda atau seseorang yang tak sengaja membuka tautan polosan tanpa ID di ujung (`https://web-anda.vercel.app/`), website **tidak akan jebol**, mereka akan diarahkan secara pintar ke Laman Demo Profil Bawaan milik Sistem. Merdeka!
+---
+
+### Langkah 2: Buka Dashboard Admin dengan ID Tersebut
+Ketik URL ini di browser Anda (ganti `xxx` dengan ID klien):
+
+```
+https://undangan-anda.vercel.app/admin.html?id=ryan-siti
+```
+
+> ⚡ **Yang terjadi di balik layar:** Sistem otomatis mengecek apakah `ryan-siti` sudah ada di database. Jika **belum ada**, sistem langsung membuat baris baru secara otomatis. Anda akan melihat notifikasi hijau: *"✅ Klien ryan-siti berhasil didaftarkan!"*
+
+---
+
+### Langkah 3: Isi semua Data Klien
+Setelah dashboard terbuka, isi semua tab satu per satu:
+
+| Tab | Yang Diisi |
+|-----|-----------|
+| **Info Pernikahan** | Nama mempelai, tanggal akad & resepsi, lokasi, URL musik, quote |
+| **Daftar Tamu** | Nama-nama tamu undangan (untuk personalisasi link) |
+| **Galeri** | URL foto-foto prewedding klien |
+| **Love Story** | Timeline perjalanan cinta mereka |
+
+Setiap kali Anda klik **💾 Simpan**, data langsung **terbang ke Supabase** secara otomatis.
+
+---
+
+### Langkah 4: Preview Hasil
+Buka tab baru di browser dan ketik:
+
+```
+https://undangan-anda.vercel.app/?id=ryan-siti
+```
+
+Anda akan melihat undangan yang sudah terisi data klien tersebut. Cek semua bagian: Cover, Profil Mempelai, Galeri, Countdown, dll.
+
+---
+
+### Langkah 5: Kirim Link ke Klien
+Serahkan link final ke WhatsApp klien:
+
+**Link undangan umum (tanpa nama tamu):**
+```
+https://undangan-anda.vercel.app/?id=ryan-siti
+```
+
+**Link undangan personal (dengan nama tamu):**
+```
+https://undangan-anda.vercel.app/?id=ryan-siti&to=Pak+Joko
+```
+
+---
+
+## 📊 Cara Cek Data Klien di Database
+
+### Via Dashboard Supabase (Rekomendasi)
+1. Buka [supabase.com](https://supabase.com) → Login
+2. Pilih project Anda
+3. Klik menu **Table Editor** (ikon tabel di sidebar kiri)
+4. Klik tabel **`wedding_invitations`**
+5. Anda akan melihat semua klien dalam format tabel:
+
+| client_id | settings | guests | wishes | gallery | created_at |
+|-----------|----------|--------|--------|---------|------------|
+| ryan-siti | {...} | [...] | [...] | [...] | 2026-04-13 |
+| budi-rina | {...} | [...] | [...] | [...] | 2026-04-14 |
+
+---
+
+## ✏️ Cara Edit Data Klien yang Sudah Ada
+
+Tinggal buka lagi dashboard admin dengan ID klien yang sama:
+
+```
+https://undangan-anda.vercel.app/admin.html?id=ryan-siti
+```
+
+Data klien akan otomatis dimuat dari Cloud. Edit apa yang perlu diubah, lalu klik **Simpan** lagi.
+
+---
+
+## 🗑️ Cara Hapus Klien
+
+1. Buka **Table Editor** di Supabase
+2. Cari baris klien yang ingin dihapus
+3. Klik baris tersebut → klik tombol **Delete** (ikon tong sampah)
+4. Selesai. Link undangan klien tersebut otomatis mati.
+
+---
+
+## ⚠️ Hal-Hal Penting
+
+1. **JANGAN** lupa menambahkan `?id=xxx` di URL. Tanpa parameter ini, website akan menampilkan data default (demo).
+2. **ID harus unik** per klien. Jangan pakai ID yang sama untuk 2 klien berbeda.
+3. **Jangan hapus** tabel `wedding_invitations` di Supabase. Semua data klien ada di sana.
+4. **Kapasitas gratis** Supabase: ±4.000 klien dan ±200 klien aktif/bulan.
+5. **Foto & musik** tidak disimpan di Supabase. Yang disimpan hanya URL-nya. Pastikan link foto/musik tetap aktif (gunakan Dropbox atau hosting sendiri).
+
+---
+
+## 🔄 Ringkasan Alur Kerja
+
+```
+Klien Transfer Uang
+       ↓
+Tentukan ID (misal: ryan-siti)
+       ↓
+Buka admin.html?id=ryan-siti → Isi data → Simpan
+       ↓
+Preview di index.html?id=ryan-siti → Cek hasil
+       ↓
+Kirim link ke klien via WhatsApp
+       ↓
+Selesai! 🎉
+```
