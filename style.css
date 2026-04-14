@@ -1069,6 +1069,11 @@ body.no-scroll {
     border-bottom-color: var(--color-gold);
 }
 
+.pitch-black-section .luxury-form select option {
+    background-color: #151515;
+    color: #ffffff;
+}
+
 .pitch-black-section .wish-card {
     border-bottom-color: #333;
 }
