@@ -74,7 +74,10 @@ async function fetchCloudData() {
         if (!data) {
             // Klien baru! Buat baris kosong di database
             console.warn(`[ADMIN] Klien "${CLIENT_ID}" belum ada. Membuat baris baru...`);
-            const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({ client_id: CLIENT_ID });
+            const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({
+                client_id: CLIENT_ID,
+                domain_origin: window.location.origin  // ← Otomatis catat domain
+            });
             if (insertErr) console.error('[ADMIN] Gagal insert baris baru:', insertErr);
             else showToast(`✅ Klien "${CLIENT_ID}" berhasil didaftarkan!`);
             return;
@@ -87,6 +90,14 @@ async function fetchCloudData() {
             localStore.gallery = data.gallery;
             localStore.story = data.story;
             showToast('✅ Data berhasil dimuat dari Cloud!');
+
+            // Jika klien lama belum punya domain_origin, isi sekarang secara otomatis
+            if (!data.domain_origin) {
+                _supaAdmin.from('wedding_invitations')
+                    .update({ domain_origin: window.location.origin })
+                    .eq('client_id', CLIENT_ID)
+                    .then();
+            }
         }
     } catch (err) {
         console.error('[ADMIN] Gagal fetch data:', err);
