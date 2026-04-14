@@ -18,11 +18,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             CLIENT_ID = urlParams.get('id') || 'demo-client';
             console.log(`[SUPABASE] Terhubung. Memuat data klien: ${CLIENT_ID}`);
 
-            const { data, error } = await _supaClient
-                .from('wedding_invitations')
-                .select('*')
-                .eq('client_id', CLIENT_ID)
-                .maybeSingle();
+            // Ambil data utama & ucapan secara PARALEL
+            const [invRes, wishesRes] = await Promise.all([
+                _supaClient.from('wedding_invitations').select('*').eq('client_id', CLIENT_ID).maybeSingle(),
+                _supaClient.from('wishes').select('*').eq('client_id', CLIENT_ID).order('created_at', { ascending: false })
+            ]);
+
+            const data = invRes.data;
+            const error = invRes.error;
+            const wishesData = wishesRes.data;
 
             if (!error && data) {
                 globalCloudData = data;
@@ -33,22 +37,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.getItem = function(k) {
                     if (k === 'wedding_settings' && globalCloudData.settings) return JSON.stringify(globalCloudData.settings);
                     if (k === 'wedding_guests' && globalCloudData.guests) return JSON.stringify(globalCloudData.guests);
-                    if (k === 'wedding_wishes' && globalCloudData.wishes) return JSON.stringify(globalCloudData.wishes);
                     if (k === 'wedding_gallery' && globalCloudData.gallery) return JSON.stringify(globalCloudData.gallery);
                     if (k === 'wedding_story' && globalCloudData.story) return JSON.stringify(globalCloudData.story);
-                    return _origGet(k);
-                };
-
-                // Pasang jembatan tulis: localStorage.setItem -> Push ke Cloud
-                const _origSet = localStorage.setItem.bind(localStorage);
-                localStorage.setItem = function(k, v) {
-                    _origSet(k, v);
-                    if (k === 'wedding_wishes' && _supaClient) {
-                        try {
-                            const parsed = JSON.parse(v);
-                            _supaClient.from('wedding_invitations').update({ wishes: parsed }).eq('client_id', CLIENT_ID).then();
-                        } catch(e) { /* silent */ }
+                    
+                    // Khusus Wishes: Ambil dari hasil fetch tabel relational
+                    if (k === 'wedding_wishes' && wishesData) {
+                        return JSON.stringify(wishesData.map(w => ({
+                            id: w.id,
+                            name: w.name,
+                            attendance: w.attendance,
+                            guests: w.guest_count || 1,
+                            message: w.message,
+                            timestamp: w.created_at
+                        })));
                     }
+                    return _origGet(k);
                 };
             } else {
                 console.warn('[SUPABASE] Data klien tidak ditemukan. Mode default aktif.');
@@ -60,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn('[SUPABASE] Gagal inisialisasi, lanjut mode lokal:', e.message);
     }
 
-    // --- FASE 2: SELALU jalankan semua fungsi UI (tidak peduli Supabase berhasil atau gagal) ---
+    // --- FASE 2: SELALU jalankan semua fungsi UI ---
     applyDynamicSettings();
     loadDynamicGallery();
     initLoveStory();
@@ -74,6 +77,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLightbox();
     createRoyalSparkles();
 });
+
+async function pushWishToCloud(newWish) {
+    if (!_supaClient) return;
+    try {
+        await _supaClient.from('wishes').insert({
+            client_id: CLIENT_ID,
+            name: newWish.name,
+            attendance: newWish.attendance,
+            guest_count: newWish.guests || 1,
+            message: newWish.message
+        });
+        console.log('[SUPABASE] Ucapan berhasil dikirim.');
+    } catch (e) {
+        console.error('[SUPABASE] Gagal sync wish:', e);
+    }
+}
+
 
 /* -----------------------------------------
    1. EXCLUSIVE COVER INTERACTION
@@ -160,10 +180,13 @@ function initRSVP() {
             return;
         }
 
-        const wish = { id: Date.now(), name, attendance, message };
+        const wish = { id: Date.now(), name, attendance, guests: 1, message, timestamp: new Date().toISOString() };
         let wishes = JSON.parse(localStorage.getItem('wedding_wishes')) || [];
         wishes.unshift(wish);
         localStorage.setItem('wedding_wishes', JSON.stringify(wishes));
+
+        // Push ke cloud
+        pushWishToCloud(wish);
 
         form.reset();
         
