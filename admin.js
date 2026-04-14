@@ -454,6 +454,11 @@ function deleteGuest(id) {
 
 function loadGuestTable() {
     const guests = getData(KEYS.GUESTS) || [];
+    const settings = getData(KEYS.SETTINGS) || getDefaultSettings();
+    const groomName = (settings.groomName || 'Mempelai Pria').split(/[,\s]/)[0];
+    const brideName = (settings.brideName || 'Mempelai Wanita').split(/[,\s]/)[0];
+    const coupleName = `${groomName} & ${brideName}`;
+
     const tbody = document.getElementById('guestTableBody');
     const count = document.getElementById('guestCount');
     count.textContent = guests.length;
@@ -466,9 +471,31 @@ function loadGuestTable() {
     const baseUrl = getBaseUrl();
 
     tbody.innerHTML = guests.map((g, i) => {
-        const link = `${baseUrl}?to=${encodeURIComponent(g.name)}`;
+        const link = `${baseUrl}?id=${CLIENT_ID}&to=${encodeURIComponent(g.name)}`;
+        const message = `Bismillahirrahmanirrahim. 
+Assalamu'alaikum Warahmatullahi Wabarakatuh,
+
+Kepada Yth. Bapak/Ibu/Saudara/i,
+*${g.name}*
+
+Tanpa mengurangi rasa hormat, melalui pesan ini kami bermaksud mengundang Bapak/Ibu/Saudara/i untuk turut hadir dan memberikan doa restu pada acara perayaan pernikahan kami:
+
+*${coupleName}*
+
+Untuk detail mengenai waktu, tempat pelaksanaan, serta informasi lainnya terkait acara kami, Bapak/Ibu/Saudara/i dapat mengakses tautan undangan digital kami di bawah ini:
+
+${link}
+
+Menjadi suatu kehormatan dan kebahagiaan yang sangat mendalam bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir di hari bahagia tersebut.
+
+Atas kehadiran dan doa restunya, terima kasih yang sebesar-besarnya kami haturkan. 
+Wassalamu'alaikum Warahmatullahi Wabarakatuh.
+
+Hormat kami,
+${coupleName}`;
+
         const waLink = g.phone
-            ? `https://wa.me/${g.phone.replace(/^0/, '62')}?text=${encodeURIComponent(`Assalamu'alaikum ${g.name},\n\nKami mengundang Anda untuk hadir di pernikahan kami.\n\nBuka undangan: ${link}`)}`
+            ? `https://wa.me/${g.phone.replace(/^0/, '62')}?text=${encodeURIComponent(message)}`
             : '#';
 
         return `
@@ -518,7 +545,7 @@ function exportGuestsCSV() {
     const baseUrl = getBaseUrl();
     let csv = 'No,Nama,WhatsApp,Link Undangan\n';
     guests.forEach((g, i) => {
-        const link = `${baseUrl}?to=${encodeURIComponent(g.name)}`;
+        const link = `${baseUrl}?id=${CLIENT_ID}&to=${encodeURIComponent(g.name)}`;
         csv += `${i + 1},"${g.name}","${g.phone || ''}","${link}"\n`;
     });
 
