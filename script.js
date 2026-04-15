@@ -7,6 +7,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let _supaClient = null;
 let CLIENT_ID = 'demo-client';
 let globalCloudData = null;
+let _localWishesCache = null; // Cache lokal untuk wishes agar tidak baca dari override getter yang stale
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -40,16 +41,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (k === 'wedding_gallery' && globalCloudData.gallery) return JSON.stringify(globalCloudData.gallery);
                     if (k === 'wedding_story' && globalCloudData.story) return JSON.stringify(globalCloudData.story);
                     
-                    // Khusus Wishes: Ambil dari hasil fetch tabel relational
-                    if (k === 'wedding_wishes' && wishesData) {
-                        return JSON.stringify(wishesData.map(w => ({
-                            id: w.id,
-                            name: w.name,
-                            attendance: w.attendance,
-                            guests: w.guest_count || 1,
-                            message: w.message,
-                            timestamp: w.created_at
-                        })));
+                    // Khusus Wishes: Gunakan cache lokal jika sudah ada, fallback ke cloud data
+                    if (k === 'wedding_wishes') {
+                        if (_localWishesCache !== null) {
+                            return JSON.stringify(_localWishesCache);
+                        }
+                        if (wishesData) {
+                            _localWishesCache = wishesData.map(w => ({
+                                id: w.id,
+                                name: w.name,
+                                attendance: w.attendance,
+                                guests: w.guest_count || 1,
+                                message: w.message,
+                                timestamp: w.created_at
+                            }));
+                            return JSON.stringify(_localWishesCache);
+                        }
                     }
                     return _origGet(k);
                 };
@@ -168,7 +175,7 @@ function initRSVP() {
     const form = document.getElementById('rsvpForm');
     if (!form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const name = document.getElementById('rsvpName').value.trim();
@@ -180,17 +187,27 @@ function initRSVP() {
             return;
         }
 
+        // Disable tombol supaya tidak double-submit
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span style="opacity:0.7">Mengirim...</span>';
+        }
+
         const wish = { id: Date.now(), name, attendance, guests: 1, message, timestamp: new Date().toISOString() };
-        let wishes = JSON.parse(localStorage.getItem('wedding_wishes')) || [];
-        wishes.unshift(wish);
-        localStorage.setItem('wedding_wishes', JSON.stringify(wishes));
 
-        // Push ke cloud
-        pushWishToCloud(wish);
+        // Update cache lokal LANGSUNG (instant UI feedback)
+        if (_localWishesCache === null) {
+            try { _localWishesCache = JSON.parse(localStorage.getItem('wedding_wishes')) || []; }
+            catch { _localWishesCache = []; }
+        }
+        _localWishesCache.unshift(wish);
 
+        // Reset form segera agar user tahu input diterima
         form.reset();
-        
-        // Temporarily hide, update, then fade back in
+
+        // Update UI wishes wall segera (tidak menunggu cloud)
         const wall = document.getElementById('wishesWall');
         if (wall) {
             wall.style.opacity = '0';
@@ -198,10 +215,23 @@ function initRSVP() {
                 loadWishes();
                 wall.style.transition = 'opacity 0.8s ease';
                 wall.style.opacity = '1';
-            }, 400);
+            }, 300);
         }
-        
+
         showToast('Terima kasih. Pesan Anda telah kami terima.');
+
+        // Push ke cloud di background (tidak blocking UI)
+        try {
+            await pushWishToCloud(wish);
+        } catch (err) {
+            console.warn('[RSVP] Cloud push gagal, data tetap tersimpan lokal:', err);
+        }
+
+        // Restore tombol
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
     });
 }
 
@@ -209,20 +239,30 @@ function loadWishes() {
     const wall = document.getElementById('wishesWall');
     if (!wall) return;
 
-    let wishes = JSON.parse(localStorage.getItem('wedding_wishes')) || [];
+    // Prioritas: cache lokal > localStorage (yang sudah di-override ke cloud)
+    let wishes;
+    if (_localWishesCache !== null) {
+        wishes = _localWishesCache;
+    } else {
+        try { wishes = JSON.parse(localStorage.getItem('wedding_wishes')) || []; }
+        catch { wishes = []; }
+    }
     
     if (wishes.length === 0) {
         wall.innerHTML = '';
         return;
     }
 
-    wall.innerHTML = wishes.map(w => `
+    // Batasi render ke 50 wishes terbaru untuk performa
+    const displayWishes = wishes.slice(0, 50);
+
+    wall.innerHTML = displayWishes.map(w => `
         <div class="wish-card">
             <div class="wish-header">
                 <span class="wish-name">${escapeHtml(w.name)}</span>
                 <span class="wish-badge">${w.attendance === 'hadir' ? 'Hadir' : 'Tidak Hadir'}</span>
             </div>
-            <p class="wish-msg">${escapeHtml(w.message)}</p>
+            <p class="wish-msg">${escapeHtml(w.message || '')}</p>
         </div>
     `).join('');
 }
