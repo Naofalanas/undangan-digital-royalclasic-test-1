@@ -29,14 +29,24 @@ export default async function handler(req, res) {
                     const s = data[0].settings;
                     
                     // Extract first names
-                    const groom = s.groomName ? s.groomName.split(' ')[0] : "Pria";
-                    const bride = s.brideName ? s.brideName.split(' ')[0] : "Wanita";
+                    const groom = s.groomName ? s.groomName.split(/[,\s]/)[0] : "Pria";
+                    const bride = s.brideName ? s.brideName.split(/[,\s]/)[0] : "Wanita";
+                    const couple = `${groom} & ${bride}`;
                     
-                    title = `Undangan Pernikahan — ${groom} & ${bride}`;
+                    title = `Undangan Pernikahan — ${couple}`;
                     
+                    // Dynamic Description
                     if (s.akadDate) {
-                        desc = `Undangan Pernikahan ${groom} & ${bride} — ${s.akadDate}. Kami mengundang Anda untuk merayakan hari bahagia kami.`;
+                        const dateObj = new Date(s.akadDate);
+                        const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                        desc = `Undangan Pernikahan ${couple} — ${formattedDate}. Kami mengundang Anda untuk merayakan hari bahagia bersama kami.`;
+                    } else {
+                        desc = `Undangan Pernikahan ${couple}. Silakan klik untuk melihat detail informasi acara kami.`;
                     }
+
+                    // Dynamic Preview Image (Social Media)
+                    // We prioritize a groom/bride photo if available
+                    const previewImage = s.groomPhoto || s.bridePhoto || "";
                 }
             }
         } catch (e) {
@@ -63,10 +73,13 @@ export default async function handler(req, res) {
     <!-- Dynamic Open Graph Tags -->
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${desc}" />
+    <meta property="og:url" content="${req.url}" />
     <meta property="og:type" content="website" />
+    ${previewImage ? `<meta property="og:image" content="${previewImage}" />` : ''}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${title}">
     <meta name="twitter:description" content="${desc}">
+    ${previewImage ? `<meta name="twitter:image" content="${previewImage}">` : ''}
 `;
         html = html.replace('</head>', `${ogTags}</head>`);
         

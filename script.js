@@ -328,6 +328,13 @@ function applyDynamicSettings() {
     const groomInit = groomFirst.charAt(0);
     const brideInit = brideFirst.charAt(0);
 
+    // Update Page Metadata (Tab Title & Meta Tag)
+    document.title = `Undangan Pernikahan — ${coupleShort}`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+        metaDesc.content = `Undangan Pernikahan ${coupleShort}. Kami mengundang Anda untuk merayakan hari bahagia bersama kami.`;
+    }
+
     // Cover & Footer
     document.querySelectorAll('.monogram-crest').forEach(el => {
         el.innerHTML = `<h1 class="cover-names">${groomInit}<span class="mono-amp">&amp;</span>${brideInit}</h1><div class="crest-ring"></div>`;
